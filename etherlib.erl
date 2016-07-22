@@ -1,5 +1,5 @@
 -module(etherlib).
--export([call/2,eth_getBalance/1,eth_getCompilers/0,eth_compileSolidity/1,eth_compileSolidityFile/1,eth_sendTransaction/4,eth_getTransactionReceipt/1,web3_sha3/1,padleft/2,get_methodCallData/2,get_methodSignHash/1,eth_methodCall/3,get_methodSign/2,eth_propertyCall/2,eth_propertyMappingCall/3,string2hexstring/1,hexstring2string/1,hex2de/1,eth_blockNumber/0,get_tranBlockGap/1,hexstring2de/1]).
+-export([call/2,eth_getBalance/1,eth_getCompilers/0,eth_compileSolidity/1,eth_compileSolidityFile/1,eth_compileSolidityQiniuFile/1,eth_sendTransaction/4,eth_getTransactionReceipt/1,web3_sha3/1,padleft/2,get_methodCallData/2,get_methodSignHash/1,eth_methodCall/3,get_methodSign/2,eth_propertyCall/2,eth_propertyMappingCall/3,string2hexstring/1,hexstring2string/1,hex2de/1,eth_blockNumber/0,get_tranBlockGap/1,hexstring2de/1]).
 -import(rfc4627,[encode/1,decode/1]).
 
 call(Method, Params) ->
@@ -16,6 +16,12 @@ eth_getBalance(Account) ->
 eth_getCompilers() ->
 	{ok, {obj, [_, _, {_, Result}]}, _} = decode(call("eth_getCompilers","[]")),
 	Result.
+
+eth_compileSolidityQiniuFile(File) ->
+	Source = qiniulib:download(File),
+	Codelist = string:tokens(Source, "\r\n\t"),
+	Code = string:join(Codelist, " "),
+	eth_compileSolidity(Code).
 
 eth_compileSolidityFile(File) ->
 	{ok, Source} = file:read_file(File),

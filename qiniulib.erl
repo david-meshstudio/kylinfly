@@ -4,9 +4,9 @@
 -import(rfc4627,[encode/1,decode/1]).
 -define(AK,"SbWsVObx9qs_V1A92TlClwQjrK9oRPgPss3BAjJV").
 -define(SK,"yzpctby_ZSeMgQOrq8IGne7rHsEwI7TWDeE30pdH").
--define(DOMAIN,"keyxx").
+-define(DOMAIN,"kylinfly").
 -define(UHOST,"http://upload.qiniu.com/").
--define(DHOST,"http://oa8s6st6u.bkt.clouddn.com/").
+-define(DHOST,"http://oaplw7qa5.bkt.clouddn.com/").
 -define(AHOST,"http://rs.qiniu.com").
 -define(BOUNDARY,"|||").
 

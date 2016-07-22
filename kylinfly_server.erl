@@ -9,5 +9,5 @@ start() ->
 		{server_name, "kylinfly"},
 		{document_root, "www"},
 		{server_root, "www"},
-		{erl_script_alias, {"/api", [contract_MemberRegister_api]}}
+		{erl_script_alias, {"/api", [kylinfly_controller]}}
 	]).

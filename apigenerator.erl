@@ -2,7 +2,6 @@
 -compile(export_all).
 -import(rfc4627,[encode/1,decode/1]).
 -define(CA, "0x6B015e3c7D407977fa053e577F89A319667d3A21").
--define(ACCOUNT, "0xda353ee3b7c142e4f5c99680d1371647d0672529").
 
 update_server() ->
 	File = "kylinfly_server.erl",
@@ -24,8 +23,8 @@ update_contract_api(ContractName) ->
 			qiniulib:uploadObj("contractlist", [Model|ContractList])
 	end.
 
-gen_api_sourcefile(ContractName, AbiDefs) ->
-	gen_api_sourcefile(ContractName, ?CA, ?ACCOUNT, AbiDefs).
+gen_api_sourcefile(ContractName, ACCOUNT, AbiDefs) ->
+	gen_api_sourcefile(ContractName, ?CA, ACCOUNT, AbiDefs).
 
 gen_api_sourcefile(ContractName, CA, ACCOUNT, AbiDefs) ->
 	File = "contract_" ++ ContractName ++ "_api.erl",
