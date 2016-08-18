@@ -1,16 +1,17 @@
 -module(apigenerator).
 -compile(export_all).
 -import(rfc4627,[encode/1,decode/1]).
--define(CA, "0x6B015e3c7D407977fa053e577F89A319667d3A21").
+-define(CA, "0xae5d318a3e4dc67f465f11fa9eacce5df537702a").
 
 update_server() ->
 	File = "kylinfly_server.erl",
 	{ok, S} = file:open(File, write),
 	ControllerListString = string:join(qiniulib:downloadObj("contractlist"),","),
-	file:write_file(File, "-module(kylinfly_server).\r\n-compile(export_all).\r\nstart() ->\r\n\tinets:stop(),\r\n\tapplication:ensure_started(inets),\r\n\tinets:start(httpd, [\r\n\t\t{modules, [mod_esi]},\r\n\t\t{port, 8368},\r\n\t\t{server_name, \"kylinfly\"},\r\n\t\t{document_root, \"www\"},\r\n\t\t{server_root, \"www\"},\r\n\t\t{erl_script_alias, {\"/api\", [" ++ ControllerListString ++ "]}}\r\n\t]).\r\n"),
+	file:write_file(File, "-module(kylinfly_server).\r\n-compile(export_all).\r\nstart() ->\r\n\tinets:stop(),\r\n\tapplication:ensure_started(inets),\r\n\t{ok, Pid}=inets:start(httpd, [\r\n\t\t{modules, [mod_esi]},\r\n\t\t{port, 8368},\r\n\t\t{server_name, \"kylinfly\"},\r\n\t\t{document_root, \"www\"},\r\n\t\t{server_root, \"www\"},\r\n\t\t{erl_script_alias, {\"/api\", [" ++ ControllerListString ++ "]}}\r\n\t]),\r\n\tqiniulib:uploadObj(\"Pid\", Pid).\r\n\r\nreload() ->\r\n\thttpd:reload_config([\r\n\t\t{modules, [mod_esi]},\r\n\t\t{port, 8368},\r\n\t\t{server_name, \"kylinfly\"},\r\n\t\t{document_root, \"www\"},\r\n\t\t{server_root, \"www\"},\r\n\t\t{erl_script_alias, {\"/api\", [" ++ ControllerListString ++ "]}}\r\n\t], non_disturbing)."),
 	file:close(S),
 	compile:file("kylinfly_server"),
-	kylinfly_server:start().
+	timer:sleep(5000),
+	kylinfly_server:reload().
 
 update_contract_api(ContractName) ->
 	Model = "contract_" ++ ContractName ++ "_api",
@@ -29,7 +30,7 @@ gen_api_sourcefile(ContractName, ACCOUNT, AbiDefs) ->
 gen_api_sourcefile(ContractName, CA, ACCOUNT, AbiDefs) ->
 	File = "contract_" ++ ContractName ++ "_api.erl",
 	{ok, S} = file:open(File, write),
-	file:write_file(File, "-module(contract_" ++ ContractName ++ "_api).\r\n-compile(export_all).\r\n-import(etherlib,[eth_getBalance/1,eth_methodCall/3,eth_propertyCall/2,eth_propertyMappingCall/3,string2hexstring/1,hexstring2string/1,hex2de/1,hexstring2de/1]).\r\n-import(rfc4627,[encode/1,decode/1]).\r\n-define(CA, \"" ++ CA ++ "\").\r\n-define(ACCOUNT, \"" ++ ACCOUNT ++ "\").\r\ngetBalance() ->\r\n\t[_,_|L] = binary_to_list(eth_getBalance(?ACCOUNT)),\r\n\thex2de(L) / 1000000000000000000.\r\ndo(SessionID, _Env, Input) ->\r\n\tData = decode(Input),\r\n\tio:format(\"~p~n\", [Data]),\r\n\tHeader = [\"Content-Type: text/plain; charset=utf-8\/r\/n\/r\/n\"],\r\n\t{ok, {obj, [{_, Command}, {_, Params}]}, []} = Data,\r\n\tContent = \"\",\r\n\tcase binary_to_list(Command) of\r\n\t\t\"getBalance\" ->\r\n\t\t\tContent = encode(getBalance());\r\n\t\t" ++ get_control_code(AbiDefs) ++ "Other ->\r\n\t\t\tContent = {\"Unknown Query\", Other}\r\n\tend,\r\n\tmod_esi:deliver(SessionID, [Header, unicode:characters_to_binary(Content), \"\"]).\r\n", [write]),
+	file:write_file(File, "-module(contract_" ++ ContractName ++ "_api).\r\n-compile(export_all).\r\n-import(etherlib,[eth_getBalance/1,eth_methodCall/3,eth_propertyCall/2,eth_propertyMappingCall/3,string2hexstring/1,hexstring2string/1,hex2de/1,hexstring2de/1]).\r\n-import(rfc4627,[encode/1,decode/1]).\r\n-define(CA, \"" ++ CA ++ "\").\r\n-define(ACCOUNT, \"" ++ ACCOUNT ++ "\").\r\ngetBalance() ->\r\n\t[_,_|L] = binary_to_list(eth_getBalance(?CA)),\r\n\thex2de(L) / 1000000000000000000.\r\ndo(SessionID, _Env, Input) ->\r\n\tData = decode(Input),\r\n\tio:format(\"~p~n\", [Data]),\r\n\tHeader = [\"Content-Type: text/plain; charset=utf-8\\r\\n\\r\\n\"],\r\n\t{ok, {obj, [{_, Command}, {_, Params}]}, []} = Data,\r\n\tcase binary_to_list(Command) of\r\n\t\t\"getBalance\" ->\r\n\t\t\tContent = encode(getBalance());\r\n\t\t" ++ get_control_code(AbiDefs) ++ "Other ->\r\n\t\t\tContent = {\"Unknown Query\", Other}\r\n\tend,\r\n\tmod_esi:deliver(SessionID, [Header, unicode:characters_to_binary(Content), \"\"]).\r\n", [write]),
 	Source = get_api_code(AbiDefs),
 	file:write_file(File, Source, [append]),
 	file:close(S).
@@ -68,7 +69,7 @@ get_api_code([AbiDef|L]) ->
 				<<"function">> ->
 					ParaNameString = string:join(get_InputNameList(InputList),","),
 					FuncParaString = string:join(get_FunctionParaList(InputList),","),
-					"func_" ++ binary_to_list(Name) ++ "(Params) ->\r\n\t[" ++ ParaNameString ++ "|_] = Params,\r\n\teth_methodCall(?CA,\"" ++ binary_to_list(Name) ++ "\",[" ++ FuncParaString ++ "]).\r\n" ++ get_api_code(L)
+					"func_" ++ binary_to_list(Name) ++ "(Params) ->\r\n\t[" ++ ParaNameString ++ "|_] = Params,\r\n\teth_methodCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\",[" ++ FuncParaString ++ "]).\r\n" ++ get_api_code(L)
 			end
 	end.
 

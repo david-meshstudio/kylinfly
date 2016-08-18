@@ -1,6 +1,7 @@
 -module(etherlib).
 -export([call/2,eth_getBalance/1,eth_getCompilers/0,eth_compileSolidity/1,eth_compileSolidityFile/1,eth_compileSolidityQiniuFile/1,eth_sendTransaction/4,eth_getTransactionReceipt/1,web3_sha3/1,padleft/2,get_methodCallData/2,get_methodSignHash/1,eth_methodCall/3,get_methodSign/2,eth_propertyCall/2,eth_propertyMappingCall/3,string2hexstring/1,hexstring2string/1,hex2de/1,eth_blockNumber/0,get_tranBlockGap/1,hexstring2de/1]).
 -import(rfc4627,[encode/1,decode/1]).
+-define(CA, "0xae5d318a3e4dc67f465f11fa9eacce5df537702a").
 
 call(Method, Params) ->
 	inets:start(),
@@ -76,7 +77,7 @@ eth_propertyMappingCall(To, Property, Params) ->
 eth_methodCall(To, Method, Params) ->
 	Data = get_methodSignHash(Method++"("++get_ParamsTypeString(Params)++")") ++ get_ParamsValueString(Params),
 	% {ok, {obj, [_, _, {_, Result}]}, _} = decode(call("eth_sendTransaction","[{\"from\":\"0x01E4Cb51Ec4768B9430b06A6EC2284C7977cCa48\",\"to\":\""++To++"\",\"data\":\""++Data++"\"}]")),
-	{ok, {obj, [_, _, {_, Result}]}, _} = decode(call("eth_sendTransaction","[{\"from\":\"0x31165e343da31363d8a0332c6638e4a55994ff1d\",\"to\":\""++To++"\",\"data\":\""++Data++"\"}]")),
+	{ok, {obj, [_, _, {_, Result}]}, _} = decode(call("eth_sendTransaction","[{\"from\":\""++?CA++"\",\"to\":\""++To++"\",\"data\":\""++Data++"\"}]")),
 	[_,_|RL] = binary_to_list(Result),
 	RL.
 

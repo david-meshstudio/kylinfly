@@ -20,12 +20,13 @@ do(SessionID, _Env, Input) ->
 			Content = ContractNames++"|"++encode(AbiDef);
 		"publishContract" ->
 			[File, Gas, Value|_] = Params,
-			{ContractName, BinCodes, AbiDef} = etherlib:eth_compileSolidityQiniuFile(binary_to_list(File)),
-			{ok, {obj, [_, _, {_, {[_, _, {_, ACCOUNT}]}}]}, _} = decode(etherlib:eth_sendTransaction(?CA, Gas, Value, BinCodes)),
-			apigenerator:gen_api_sourcefile(ContractName, ACCOUNT, AbiDef),
+			{[ContractName|_], [BinCodes|_], AbiDef} = etherlib:eth_compileSolidityQiniuFile(binary_to_list(File)),
+			{ok, {obj, [_, _, {_, Account}]}, _} = decode(etherlib:eth_sendTransaction(?CA, binary_to_list(Gas), binary_to_list(Value), binary_to_list(BinCodes))),
+			apigenerator:gen_api_sourcefile(ContractName, binary_to_list(Account), AbiDef),
 			apigenerator:update_contract_api(ContractName),
+			timer:sleep(5000),
 			apigenerator:update_server(),
-			Content = "ok";
+			Content = ContractName++"|"++encode(AbiDef)++"|"++binary_to_list(Account);
 		Other ->
 			Content = encode({"Unknown Query", Other})
 	end,
