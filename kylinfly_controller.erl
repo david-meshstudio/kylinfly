@@ -25,8 +25,9 @@ do(SessionID, _Env, Input) ->
 			apigenerator:gen_api_sourcefile(ContractName, binary_to_list(Account), AbiDef),
 			apigenerator:update_contract_api(ContractName),
 			timer:sleep(5000),
-			apigenerator:update_server(),
-			Content = ContractName++"|"++encode(AbiDef)++"|"++binary_to_list(Account);
+			Content = ContractName++"|"++encode(AbiDef)++"|"++binary_to_list(Account),
+			mod_esi:deliver(SessionID, [Header, unicode:characters_to_binary(Content), ""]),
+			apigenerator:update_server();
 		Other ->
 			Content = encode({"Unknown Query", Other})
 	end,
