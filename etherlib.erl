@@ -21,13 +21,17 @@ eth_compileSolidityQiniuFile(File) ->
 	Source = qiniulib:download(File),
 	Codelist = string:tokens(Source, "\r\n\t"),
 	Code = string:join(Codelist, " "),
-	eth_compileSolidity(Code).
+	Codelist2 = string:tokens(Code, "\""),
+	Code2 = string:join(Codelist2, "\\\""),
+	eth_compileSolidity(Code2).
 
 eth_compileSolidityFile(File) ->
 	{ok, Source} = file:read_file(File),
 	Codelist = string:tokens(binary_to_list(Source), "\r\n\t"),
 	Code = string:join(Codelist, " "),
-	eth_compileSolidity(Code).
+	Codelist2 = string:tokens(Code, "\""),
+	Code2 = string:join(Codelist2, "\\\""),
+	eth_compileSolidity(Code2).
 
 eth_compileSolidity(Code) ->
 	{ok, {obj, [_, _, {_, {obj, ContractCodes}}]}, _} = decode(call("eth_compileSolidity","[\""++Code++"\"]")),
