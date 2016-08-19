@@ -24,13 +24,13 @@ update_contract_api(ContractName) ->
 			qiniulib:uploadObj("contractlist", [Model|ContractList])
 	end.
 
-gen_api_sourcefile(ContractName, ACCOUNT, AbiDefs) ->
-	gen_api_sourcefile(ContractName, ?CA, ACCOUNT, AbiDefs).
+gen_api_sourcefile(ContractName, Account, AbiDefs) ->
+	gen_api_sourcefile(ContractName, ?CA, Account, AbiDefs).
 
-gen_api_sourcefile(ContractName, CA, ACCOUNT, AbiDefs) ->
+gen_api_sourcefile(ContractName, CA, Account, AbiDefs) ->
 	File = "contract_" ++ ContractName ++ "_api.erl",
 	{ok, S} = file:open(File, write),
-	file:write_file(File, "-module(contract_" ++ ContractName ++ "_api).\r\n-compile(export_all).\r\n-import(etherlib,[eth_getBalance/1,eth_methodCall/3,eth_propertyCall/2,eth_propertyMappingCall/3,string2hexstring/1,hexstring2string/1,hex2de/1,hexstring2de/1]).\r\n-import(rfc4627,[encode/1,decode/1]).\r\n-define(CA, \"" ++ CA ++ "\").\r\n-define(ACCOUNT, \"" ++ ACCOUNT ++ "\").\r\ngetBalance() ->\r\n\t[_,_|L] = binary_to_list(eth_getBalance(?CA)),\r\n\thex2de(L) / 1000000000000000000.\r\ndo(SessionID, _Env, Input) ->\r\n\tData = decode(Input),\r\n\tio:format(\"~p~n\", [Data]),\r\n\tHeader = [\"Content-Type: text/plain; charset=utf-8\\r\\n\\r\\n\"],\r\n\t{ok, {obj, [{_, Command}, {_, Params}]}, []} = Data,\r\n\tcase binary_to_list(Command) of\r\n\t\t\"getBalance\" ->\r\n\t\t\tContent = encode(getBalance());\r\n\t\t" ++ get_control_code(AbiDefs) ++ "Other ->\r\n\t\t\tContent = {\"Unknown Query\", Other}\r\n\tend,\r\n\tmod_esi:deliver(SessionID, [Header, unicode:characters_to_binary(Content), \"\"]).\r\n", [write]),
+	file:write_file(File, "-module(contract_" ++ ContractName ++ "_api).\r\n-compile(export_all).\r\n-import(etherlib,[eth_getBalance/1,eth_methodCall/3,eth_propertyCall/2,eth_propertyMappingCall/3,string2hexstring/1,hexstring2string/1,hex2de/1,hexstring2de/1]).\r\n-import(rfc4627,[encode/1,decode/1]).\r\n-define(CA, \"" ++ CA ++ "\").\r\n-define(ACCOUNT, \"" ++ Account ++ "\").\r\ngetBalance() ->\r\n\t[_,_|L] = binary_to_list(eth_getBalance(?CA)),\r\n\thex2de(L) / 1000000000000000000.\r\ndo(SessionID, _Env, Input) ->\r\n\tData = decode(Input),\r\n\tio:format(\"~p~n\", [Data]),\r\n\tHeader = [\"Content-Type: text/plain; charset=utf-8\\r\\n\\r\\n\"],\r\n\t{ok, {obj, [{_, Command}, {_, Params}]}, []} = Data,\r\n\tcase binary_to_list(Command) of\r\n\t\t\"getBalance\" ->\r\n\t\t\tContent = encode(getBalance());\r\n\t\t" ++ get_control_code(AbiDefs) ++ "Other ->\r\n\t\t\tContent = {\"Unknown Query\", Other}\r\n\tend,\r\n\tmod_esi:deliver(SessionID, [Header, unicode:characters_to_binary(Content), \"\"]).\r\n", [write]),
 	Source = get_api_code(AbiDefs),
 	file:write_file(File, Source, [append]),
 	file:close(S).

@@ -21,10 +21,15 @@ do(SessionID, _Env, Input) ->
 		"publishContract" ->
 			[File, Gas, Value|_] = Params,
 			{[ContractName|_], [BinCodes|_], AbiDef} = etherlib:eth_compileSolidityQiniuFile(binary_to_list(File)),
-			{ok, {obj, [_, _, {_, Account}]}, _} = decode(etherlib:eth_sendTransaction(?CA, binary_to_list(Gas), binary_to_list(Value), binary_to_list(BinCodes))),
+			{ok, {obj, [_, _, {_, Txid}]}, _} = decode(etherlib:eth_sendTransaction(?CA, binary_to_list(Gas), binary_to_list(Value), binary_to_list(BinCodes))),
+			Content = ContractName++"|"++encode(AbiDef)++"|"++binary_to_list(Txid);
+		"deployContractAPI" ->
+			[File, Txid|_] = Params,
+			{[ContractName|_], _, AbiDef} = etherlib:eth_compileSolidityQiniuFile(binary_to_list(File)),
+			{ok, {obj, [_, _, {_, {obj, [_, _, {_, Account}, _, _, _, _, _, _, _, _]}}]}, _} = decode(etherlib:eth_getTransactionReceipt(binary_to_list(Txid))),
 			apigenerator:gen_api_sourcefile(ContractName, binary_to_list(Account), AbiDef),
 			apigenerator:update_contract_api(ContractName),
-			timer:sleep(5000),
+			timer:sleep(3000),
 			Content = ContractName++"|"++encode(AbiDef)++"|"++binary_to_list(Account),
 			mod_esi:deliver(SessionID, [Header, unicode:characters_to_binary(Content), ""]),
 			apigenerator:update_server();

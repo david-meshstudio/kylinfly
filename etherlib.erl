@@ -1,5 +1,5 @@
 -module(etherlib).
--export([call/2,eth_getBalance/1,eth_getCompilers/0,eth_compileSolidity/1,eth_compileSolidityFile/1,eth_compileSolidityQiniuFile/1,eth_sendTransaction/4,eth_getTransactionReceipt/1,web3_sha3/1,padleft/2,get_methodCallData/2,get_methodSignHash/1,eth_methodCall/3,get_methodSign/2,eth_propertyCall/2,eth_propertyMappingCall/3,string2hexstring/1,hexstring2string/1,hex2de/1,eth_blockNumber/0,get_tranBlockGap/1,hexstring2de/1]).
+-export([call/2,eth_getBalance/1,eth_getCompilers/0,eth_compileSolidity/1,eth_compileSolidityFile/1,eth_compileSolidityQiniuFile/1,eth_sendTransaction/4,eth_getTransactionReceipt/1,web3_sha3/1,padleft/2,get_methodCallData/2,get_methodSignHash/1,eth_methodCall/3,get_methodSign/2,eth_propertyCall/2,eth_propertyMappingCall/3,string2hexstring/1,hexstring2string/1,hex2de/1,de2Hex/1,eth_blockNumber/0,get_tranBlockGap/1,hexstring2de/1]).
 -import(rfc4627,[encode/1,decode/1]).
 -define(CA, "0xae5d318a3e4dc67f465f11fa9eacce5df537702a").
 
@@ -112,9 +112,11 @@ get_ParamsValueString([P|PL]) ->
 		{Type, Value, Length, Offset} ->
 			if
 				Type =:= "uint256" ->
-					padleft(de2Hex(Value), Length) ++ get_ParamsValueString(PL);
+					{Value1,_} = string:to_integer(Value),
+					padleft(de2Hex(Value1), Length) ++ get_ParamsValueString(PL);
 				Type =:= "uint" ->
-					padleft(de2Hex(Value), Length) ++ get_ParamsValueString(PL);
+					{Value1,_} = string:to_integer(Value),
+					padleft(de2Hex(Value1), Length) ++ get_ParamsValueString(PL);
 				Type =:= "bytes32" ->
 					padright(Value, Length) ++ get_ParamsValueString(PL);
 				Type =:= "string" ->
