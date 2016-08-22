@@ -3,14 +3,14 @@
 -import(etherlib,[eth_getBalance/1,eth_methodCall/3,eth_propertyCall/2,eth_propertyMappingCall/3,string2hexstring/1,hexstring2string/1,hex2de/1,hexstring2de/1]).
 -import(rfc4627,[encode/1,decode/1]).
 -define(CA, "0xae5d318a3e4dc67f465f11fa9eacce5df537702a").
--define(ACCOUNT, "0x1ed671592f33169d3ea1df81bb73c445a36fb4078e5b805aa5b56d6c9b39d1b0").
+-define(ACCOUNT, "0x5c0e61bb80d4fcc2d3ee0823d0262376a2e00c7a").
 getBalance() ->
 	[_,_|L] = binary_to_list(eth_getBalance(?CA)),
 	hex2de(L) / 1000000000000000000.
 do(SessionID, _Env, Input) ->
 	Data = decode(Input),
 	io:format("~p~n", [Data]),
-	Header = ["Content-Type: text/plain; charset=utf-8\r\n\r\n"],
+	Header = ["Content-Type: text/plain; charset=utf-8 \r\n Access-Control-Allow-Origin:* \r\n\r\n"],
 	{ok, {obj, [{_, Command}, {_, Params}]}, []} = Data,
 	case binary_to_list(Command) of
 		"getBalance" ->
@@ -44,6 +44,7 @@ do(SessionID, _Env, Input) ->
 		Other ->
 			Content = {"Unknown Query", Other}
 	end,
+	io:format("~p~n", [Content]),
 	mod_esi:deliver(SessionID, [Header, unicode:characters_to_binary(Content), ""]).
 func_SetTreature(Params) ->
 	[P__type,P__grid|_] = Params,

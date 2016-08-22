@@ -6,7 +6,7 @@
 do(SessionID, _Env, Input) ->
 	Data = decode(Input),
 	io:format("~p~n", [Data]),
-	Header = ["Content-Type: text/plain; charset=utf-8\r\n\r\n"],
+	Header = ["Content-Type: text/plain; charset=utf-8; Access-Control-Allow-Origin:*;\r\n\r\n"],
 	{ok, {obj, [{_, Command}, {_, Params}]}, []} = Data,
 	case binary_to_list(Command) of
 		"getBalance" when Params =:= [] ->
@@ -36,4 +36,5 @@ do(SessionID, _Env, Input) ->
 		Other ->
 			Content = encode({"Unknown Query", Other})
 	end,
+	io:format("~p~n", [Content]),
 	mod_esi:deliver(SessionID, [Header, unicode:characters_to_binary(Content), ""]).
