@@ -11,7 +11,6 @@ start() ->
 		{server_name, "kylinfly"},
 		{document_root, "www"},
 		{server_root, "www"},
-		% {erl_script_alias, {"/api", [contract_BM_TBGameBackendV2_api,contract_BM_TBGameBackendV7_api,contract_BM_TBGameBackendV1_api,contract_BM_TBGameBackendV0_api,kylinfly_controller]}}
 		{erl_script_alias, {"/api", get_moduleList(ContractList)}}
 	]),
 	qiniulib:uploadObj("Pid", Pid).

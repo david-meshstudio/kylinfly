@@ -4,25 +4,7 @@
 -define(CA, "0xae5d318a3e4dc67f465f11fa9eacce5df537702a").
 
 update_server() ->
-	% File = "kylinfly_server.erl",
-	% {ok, S} = file:open(File, write),
-	% ControllerListString = string:join(qiniulib:downloadObj("contractlist"),","),
-	% FileString = "-module(kylinfly_server).\r\n-compile(export_all).\r\nstart() ->\r\n\tinets:stop(),\r\n\tapplication:ensure_started(inets),\r\n\t{ok, Pid}=inets:start(httpd, [\r\n\t\t{modules, [mod_esi]},\r\n\t\t{port, 8368},\r\n\t\t{server_name, \"kylinfly\"},\r\n\t\t{document_root, \"www\"},\r\n\t\t{server_root, \"www\"},\r\n\t\t{erl_script_alias, {\"/api\", [" ++ ControllerListString ++ "]}}\r\n\t]),\r\n\tqiniulib:uploadObj(\"Pid\", Pid).\r\n\r\nreload() ->\r\n\tio:format(\"~p~n\", [\"reload server 2\"]),\r\n\tRes = httpd:reload_config([\r\n\t\t{modules, [mod_esi]},\r\n\t\t{port, 8368},\r\n\t\t{server_name, \"kylinfly\"},\r\n\t\t{document_root, \"www\"},\r\n\t\t{server_root, \"www\"},\r\n\t\t{erl_script_alias, {\"/api\", [" ++ ControllerListString ++ "]}}\r\n\t], non_disturbing),\r\n\tio:format(\"~p~n\", [Res]).",
-	% file:write_file(File, FileString),
-	% file:close(S),
-	% io:format("~p~n", ["update server file"]),
-	% timer:sleep(3000),
-	% % {ModuleName, BinCode} = dynamic_compile:from_string(FileString),
-	% % code:load_binary(Mod, File, Code),
-	% {ok, ModuleName, BinCode} = compile:file(File, binary),
-	% code:load_binary(ModuleName, File, BinCode),
-	% io:format("~p~n", ["compile server file"]),
-	% timer:sleep(3000),
-	io:format("~p~n", ["reload server 1"]),
-	% kylinfly_server:stop(),
-	% kylinfly_server:reload(),
-	test_handler:test("start"),
-	io:format("~p~n", ["reload server 3"]).
+	test_handler:test("reload").
 
 update_contract_api(ContractName) ->
 	Model = "contract_" ++ ContractName ++ "_api",
