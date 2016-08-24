@@ -6,7 +6,7 @@ start() ->
 	io:format("~p~n", [ContractList]),
 	application:ensure_started(inets),
 	{ok, Pid}=inets:start(httpd, [
-		{modules, [mod_esi]},
+		{modules, [mod_esi,mod_get]},
 		{port, 8368},
 		{server_name, "kylinfly"},
 		{document_root, "www"},
@@ -20,7 +20,7 @@ reload() ->
 	ContractList = qiniulib:downloadObj("contractlist"),
 	io:format("~p~n", [ContractList]),
 	Res = httpd:reload_config([
-		{modules, [mod_esi]},
+		{modules, [mod_esi,mod_get]},
 		{port, 8368},
 		{server_name, "kylinfly"},
 		{document_root, "www"},
