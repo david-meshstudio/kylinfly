@@ -11,7 +11,8 @@ start() ->
 		{server_name, "kylinfly"},
 		{document_root, "www"},
 		{server_root, "www"},
-		{erl_script_alias, {"/api", get_moduleList(ContractList)}}
+		{script_nocache, false},
+		{erl_script_alias, {"/api", [healthcheck|get_moduleList(ContractList)]}}
 	]),
 	qiniulib:uploadObj("Pid", Pid).
 
@@ -24,7 +25,8 @@ reload() ->
 		{server_name, "kylinfly"},
 		{document_root, "www"},
 		{server_root, "www"},
-		{erl_script_alias, {"/api", get_moduleList(ContractList)}}
+		{script_nocache, false},
+		{erl_script_alias, {"/api", [healthcheck|get_moduleList(ContractList)]}}
 	], non_disturbing),
 	io:format("~p~n", [Res]).
 
