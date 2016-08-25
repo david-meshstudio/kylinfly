@@ -18,16 +18,16 @@ do(SessionID, _Env, Input) ->
 			Content = encode(etherlib:eth_getBalance(Account));
 		"compileContract" ->
 			[File|_] = Params,
-			{ContractNames, _, AbiDef} = etherlib:eth_compileSolidityQiniuFile(File),
+			{{ContractNames, _, AbiDef}, _Mark} = etherlib:eth_compileSolidityQiniuFile(File),
 			Content = ContractNames++"|"++encode(AbiDef);
 		"publishContract" ->
 			[File, Gas, Value|_] = Params,
-			{[ContractName|_], [BinCodes|_], AbiDef} = etherlib:eth_compileSolidityQiniuFile(File),
+			{{[ContractName|_], [BinCodes|_], AbiDef}, _Mark} = etherlib:eth_compileSolidityQiniuFile(File),
 			{ok, {obj, [_, _, {_, Txid}]}, _} = decode(etherlib:eth_sendTransaction(?CA, Gas, Value, binary_to_list(BinCodes))),
 			Content = ContractName++"|"++encode(AbiDef)++"|"++binary_to_list(Txid);
 		"deployContractAPI" ->
 			[File, Txid|_] = Params,
-			{[ContractName|_], _, AbiDef} = etherlib:eth_compileSolidityQiniuFile(File),
+			{{[ContractName|_], _, AbiDef}, _Mark} = etherlib:eth_compileSolidityQiniuFile(File),
 			{ok, {obj, [_, _, {_, {obj, [_, _, {_, Account}, _, _, _, _, _, _, _, _]}}]}, _} = decode(etherlib:eth_getTransactionReceipt(Txid)),
 			apigenerator:gen_api_sourcefile(ContractName, binary_to_list(Account), AbiDef),
 			apigenerator:update_contract_api(ContractName),
