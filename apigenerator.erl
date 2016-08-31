@@ -59,6 +59,8 @@ get_api_code([AbiDef|L]) ->
 			% "get_" ++ binary_to_list(Name) ++ "(Params) ->\r\n\t[" ++ ParaNameString ++ "|_] = Params,\r\n\t" ++ ReadFuncName ++ "(eth_propertyMappingCall(?CA, \"" ++ binary_to_list(Name) ++ "\",[" ++ FuncParaString ++ "])).\r\n" ++ ReadFuncName ++ "(Data) ->\r\n\t" ++ ReadFuncCode ++ "\r\n" ++ get_api_code(L);
 		true ->
 			case Type of
+				<<"function">> when InputList =:= []->
+					"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\teth_methodCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\",[]).\r\n" ++ get_api_code(L);
 				<<"function">> ->
 					ParaNameString = string:join(get_InputNameList(InputList),","),
 					FuncParaString = string:join(get_FunctionParaList(InputList),","),

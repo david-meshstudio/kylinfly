@@ -1,5 +1,5 @@
 -module(etherlib).
--export([call/2,eth_getBalance/1,eth_getCompilers/0,eth_compileSolidity/1,eth_compileSolidityFile/1,eth_compileSolidityQiniuFile/1,eth_sendTransaction/4,eth_getTransactionReceipt/1,web3_sha3/1,padleft/2,get_methodCallData/2,get_methodSignHash/1,eth_methodCall/3,get_methodSign/2,eth_propertyCall/2,eth_propertyMappingCall/3,string2hexstring/1,hexstring2string/1,hex2de/1,de2Hex/1,eth_blockNumber/0,get_tranBlockGap/1,hexstring2de/1,eth_getStorageAt/2,eth_getStorageAt/3,eth_gasPrice/0]).
+-export([call/2,eth_getBalance/1,eth_getCompilers/0,eth_compileSolidity/1,eth_compileSolidityFile/1,eth_compileSolidityQiniuFile/1,eth_sendTransaction/4,eth_getTransactionReceipt/1,web3_sha3/1,padleft/2,get_methodCallData/2,get_methodSignHash/1,eth_methodCall/3,get_methodSign/2,eth_propertyCall/2,eth_propertyMappingCall/3,string2hexstring/1,hexstring2string/1,hex2de/1,de2Hex/1,eth_blockNumber/0,get_tranBlockGap/1,hexstring2de/1,eth_getStorageAt/2,eth_getStorageAt/3,eth_gasPrice/0,eth_propertyMappingCallWithTransaction/3]).
 -import(rfc4627,[encode/1,decode/1]).
 -compile(export_all).
 -define(CA, "0xae5d318a3e4dc67f465f11fa9eacce5df537702a").
@@ -82,9 +82,17 @@ eth_propertyCall(To, Property) ->
 	[_,_|RL] = binary_to_list(Result),
 	RL.
 
+eth_propertyMappingCall(To, Property, []) ->
+	eth_propertyCall(To, Property);
 eth_propertyMappingCall(To, Property, Params) ->
 	Data = get_methodSignHash(Property++"("++get_ParamsTypeString(Params)++")") ++ get_ParamsValueString(Params),
 	{ok, {obj, [_, _, {_, Result}]}, _} = decode(call("eth_call","[{\"to\":\""++To++"\",\"data\":\""++Data++"\"},\"latest\"]")),
+	[_,_|RL] = binary_to_list(Result),
+	RL.
+
+eth_propertyMappingCallWithTransaction(To, Property, Params) ->
+	Data = get_methodSignHash(Property++"("++get_ParamsTypeString(Params)++")") ++ get_ParamsValueString(Params),
+	{ok, {obj, [_, _, {_, Result}]}, _} = decode(call("eth_call","[{\"from\":\""++?CA++"\",\"to\":\""++To++"\",\"gas\":\"400000\",\"data\":\""++Data++"\"},\"latest\"]")),
 	[_,_|RL] = binary_to_list(Result),
 	RL.
 
