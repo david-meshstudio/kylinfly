@@ -3,7 +3,7 @@
 -import(etherlib,[eth_getBalance/1,eth_methodCall/3,eth_propertyCall/2,eth_propertyMappingCall/3,string2hexstring/1,hexstring2string/1,hex2de/1,hexstring2de/1]).
 -import(rfc4627,[encode/1,decode/1]).
 -define(CA, "0xae5d318a3e4dc67f465f11fa9eacce5df537702a").
--define(ACCOUNT, "0x0af51ac1d4e649fcfacb3d9f63faca08f3e896e8").
+-define(ACCOUNT, "0x1096a40181bfa143ee436705db5d48506cd02577").
 getBalance() ->
 	[_,_|L] = binary_to_list(eth_getBalance(?CA)),
 	hex2de(L) / 1000000000000000000.
@@ -13,7 +13,6 @@ do(SessionID, _Env, Input) ->
 	Header = ["Content-Type: text/plain; charset=utf-8 \r\n Access-Control-Allow-Origin:* \r\n\r\n"],
 	[{_, Command},{_, ParamsString}] = Data,
 	{ok, Params} = httpd_util:split(ParamsString, ",", 10),
-	io:format("~p~n", [Params]),
 	case Command of
 		"getBalance" ->
 			Content = encode(getBalance());
