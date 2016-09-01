@@ -60,7 +60,7 @@ get_api_code([AbiDef|L]) ->
 		true ->
 			case Type of
 				<<"function">> when InputList =:= []->
-					"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\teth_methodCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\",[]).\r\n" ++ get_api_code(L);
+					"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\teth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\").\r\n" ++ get_api_code(L);
 				<<"function">> ->
 					ParaNameString = string:join(get_InputNameList(InputList),","),
 					FuncParaString = string:join(get_FunctionParaList(InputList),","),

@@ -82,8 +82,6 @@ eth_propertyCall(To, Property) ->
 	[_,_|RL] = binary_to_list(Result),
 	RL.
 
-eth_propertyMappingCall(To, Property, []) ->
-	eth_propertyCall(To, Property);
 eth_propertyMappingCall(To, Property, Params) ->
 	Data = get_methodSignHash(Property++"("++get_ParamsTypeString(Params)++")") ++ get_ParamsValueString(Params),
 	{ok, {obj, [_, _, {_, Result}]}, _} = decode(call("eth_call","[{\"to\":\""++To++"\",\"data\":\""++Data++"\"},\"latest\"]")),
