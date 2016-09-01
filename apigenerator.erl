@@ -48,19 +48,37 @@ get_api_code([AbiDef|L]) ->
 	{obj, [{"constant", Constant},{"inputs",InputList},{"name",Name},{"outputs",OutputList},{"type",Type}]} = AbiDef,
 	if
 		Constant ->
-			get_ReadDataCode(OutputList),
-			get_api_code(L);
-			% NamedInputList = set_Names(InputList),
-			% NamedOutputList = set_Names(OutputList),
-			% ParaNameString = string:join(get_InputNameList(NamedInputList),","),
-			% FuncParaString = string:join(get_FunctionParaList(NamedInputList),","),
-			% ReadFuncName = "read_" ++ binary_to_list(Name) ++ "_Data",
-			% ReadFuncCode = get_ReadDataCode(NamedOutputList),
-			% "get_" ++ binary_to_list(Name) ++ "(Params) ->\r\n\t[" ++ ParaNameString ++ "|_] = Params,\r\n\t" ++ ReadFuncName ++ "(eth_propertyMappingCall(?CA, \"" ++ binary_to_list(Name) ++ "\",[" ++ FuncParaString ++ "])).\r\n" ++ ReadFuncName ++ "(Data) ->\r\n\t" ++ ReadFuncCode ++ "\r\n" ++ get_api_code(L);
+			case InputList of
+				[] ->
+					io:format("~p~n", [OutputList]),
+					[{obj, [_, {"type", OutputType}]}|_] = OutputList,
+					case OutputType of
+						<<"uint">> ->
+							"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\tencode(etherlib:hex2de(eth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\"))).\r\n" ++ get_api_code(L);
+						<<"uint256">> ->
+							"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\tencode(etherlib:hex2de(eth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\"))).\r\n" ++ get_api_code(L);
+						_ ->
+							"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\teth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\").\r\n" ++ get_api_code(L)
+					end;
+					
+				[_] ->
+					ParaNameString = string:join(get_InputNameList(InputList),","),
+					FuncParaString = string:join(get_FunctionParaList(InputList),","),
+					"func_" ++ binary_to_list(Name) ++ "(Params) ->\r\n\t[" ++ ParaNameString ++ "|_] = Params,\r\n\teth_propertyMappingCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\",[" ++ FuncParaString ++ "]).\r\n" ++ get_api_code(L)
+			end;			
 		true ->
 			case Type of
 				<<"function">> when InputList =:= []->
-					"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\teth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\").\r\n" ++ get_api_code(L);
+					[{obj, [_, {"type", OutputType}]}|_] = OutputList,
+					io:format("~p~n", [OutputType]),
+					case OutputType of
+						<<"uint">> ->
+							"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\tencode(etherlib:hex2de(eth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\"))).\r\n" ++ get_api_code(L);
+						<<"uint256">> ->
+							"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\tencode(etherlib:hex2de(eth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\"))).\r\n" ++ get_api_code(L);
+						_ ->
+							"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\teth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\").\r\n" ++ get_api_code(L)
+					end;					
 				<<"function">> ->
 					ParaNameString = string:join(get_InputNameList(InputList),","),
 					FuncParaString = string:join(get_FunctionParaList(InputList),","),

@@ -41,7 +41,7 @@ func_add(Params) ->
 	[P_x,P_y|_] = Params,
 	eth_methodCall(?ACCOUNT,"add",[{"uint256",P_x,64,0},{"uint256",P_y,64,0}]).
 func_getTotal(_) ->
-	eth_propertyCall(?ACCOUNT,"getTotal").
+	encode(etherlib:hex2de(eth_propertyCall(?ACCOUNT,"getTotal"))).
 func_divid(Params) ->
 	[P_x,P_y|_] = Params,
 	eth_methodCall(?ACCOUNT,"divid",[{"uint256",P_x,64,0},{"uint256",P_y,64,0}]).
