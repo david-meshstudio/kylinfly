@@ -34,6 +34,8 @@ eth_compileSolidityCodelist(Codelist) ->
 	Code = string:join(Codelist, " "),
 	Codelist2 = string:tokens(Code, "\""),
 	Code2 = string:join(Codelist2, "\\\""),
+	% Code3 = kylinfly_tool:str_replace_list(["int8","int16","int32","int64","int128"], "int256", Code2),
+	% Code4 = kylinfly_tool:str_replace_list(["uint8","uint16","uint32","uint64","uint128"], "uint256", Code3),
 	eth_compileSolidity(Code2).
 
 eth_compileSolidityQiniuFile(File) ->
@@ -197,3 +199,8 @@ hex2de(Hex) ->
 hexstring2de(Hex) ->
 	[_,_|L] = binary_to_list(Hex),
 	hex2de(L).
+
+getStringValue(Data) ->
+	Offset = hex2de(lists:sublist(Data, 1, 64)),
+	NameLength = hex2de(lists:sublist(Data,  Offset * 2 + 1, 64)),
+	hexstring2string(lists:sublist(Data, 64 + Offset * 2 + 1, NameLength * 2)).

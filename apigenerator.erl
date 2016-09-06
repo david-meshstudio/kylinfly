@@ -48,19 +48,15 @@ get_api_code([AbiDef|L]) ->
 	{obj, [{"constant", Constant},{"inputs",InputList},{"name",Name},{"outputs",OutputList},{"type",Type}]} = AbiDef,
 	if
 		Constant ->
+			[{obj, [_, {"type", OutputType}]}|_] = OutputList,
+			io:format("~p~n", [OutputList]),
 			case InputList of
+				[] when OutputType =:= <<"int">>; OutputType =:= <<"int256">>; OutputType =:= <<"uint">>; OutputType =:= <<"uint256">> ->
+					"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\tencode(etherlib:hex2de(eth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\"))).\r\n" ++ get_api_code(L);
+				[] when OutputType =:= <<"string">>; OutputType =:= <<"bytes">> ->
+					"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\tetherlib:getStringValue(eth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\")).\r\n" ++ get_api_code(L);
 				[] ->
-					io:format("~p~n", [OutputList]),
-					[{obj, [_, {"type", OutputType}]}|_] = OutputList,
-					case OutputType of
-						<<"uint">> ->
-							"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\tencode(etherlib:hex2de(eth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\"))).\r\n" ++ get_api_code(L);
-						<<"uint256">> ->
-							"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\tencode(etherlib:hex2de(eth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\"))).\r\n" ++ get_api_code(L);
-						_ ->
-							"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\teth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\").\r\n" ++ get_api_code(L)
-					end;
-					
+					"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\teth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\").\r\n" ++ get_api_code(L);				
 				[_] ->
 					ParaNameString = string:join(get_InputNameList(InputList),","),
 					FuncParaString = string:join(get_FunctionParaList(InputList),","),
@@ -68,21 +64,37 @@ get_api_code([AbiDef|L]) ->
 			end;			
 		true ->
 			case Type of
-				<<"function">> when InputList =:= []->
-					[{obj, [_, {"type", OutputType}]}|_] = OutputList,
-					io:format("~p~n", [OutputType]),
-					case OutputType of
-						<<"uint">> ->
-							"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\tencode(etherlib:hex2de(eth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\"))).\r\n" ++ get_api_code(L);
-						<<"uint256">> ->
-							"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\tencode(etherlib:hex2de(eth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\"))).\r\n" ++ get_api_code(L);
+				<<"function">> when OutputList =:= [] ->
+					case InputList of
+						[] ->
+							"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\teth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\").\r\n" ++ get_api_code(L);
 						_ ->
-							"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\teth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\").\r\n" ++ get_api_code(L)
-					end;					
+							ParaNameString = string:join(get_InputNameList(InputList),","),
+							FuncParaString = string:join(get_FunctionParaList(InputList),","),
+							"func_" ++ binary_to_list(Name) ++ "(Params) ->\r\n\t[" ++ ParaNameString ++ "|_] = Params,\r\n\teth_propertyMappingCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\",[" ++ FuncParaString ++ "]).\r\n" ++ get_api_code(L)
+					end;		
 				<<"function">> ->
-					ParaNameString = string:join(get_InputNameList(InputList),","),
-					FuncParaString = string:join(get_FunctionParaList(InputList),","),
-					"func_" ++ binary_to_list(Name) ++ "(Params) ->\r\n\t[" ++ ParaNameString ++ "|_] = Params,\r\n\teth_methodCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\",[" ++ FuncParaString ++ "]).\r\n" ++ get_api_code(L)
+					[{obj, [_, {"type", OutputType}]}|_] = OutputList,
+					io:format("~p~n", [OutputList]),
+					case InputList of
+						[] when OutputType =:= <<"int">>; OutputType =:= <<"int256">>; OutputType =:= <<"uint">>; OutputType =:= <<"uint256">> ->
+							"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\tencode(etherlib:hex2de(eth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\"))).\r\n" ++ get_api_code(L);
+						[] when OutputType =:= <<"string">>; OutputType =:= <<"bytes">> ->
+							"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\tetherlib:getStringValue(eth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\")).\r\n" ++ get_api_code(L);
+						[] ->
+							"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\teth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\").\r\n" ++ get_api_code(L);
+						_ ->
+							ParaNameString = string:join(get_InputNameList(InputList),","),
+							FuncParaString = string:join(get_FunctionParaList(InputList),","),
+							if
+								OutputType =:= <<"int">>; OutputType =:= <<"int256">>; OutputType =:= <<"uint">>; OutputType =:= <<"uint256">> ->
+									"func_" ++ binary_to_list(Name) ++ "(Params) ->\r\n\t[" ++ ParaNameString ++ "|_] = Params,\r\n\tencode(etherlib:hex2de(eth_propertyMappingCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\",[" ++ FuncParaString ++ "]))).\r\n" ++ get_api_code(L);
+								OutputType =:= <<"string">>; OutputType =:= <<"bytes">> ->
+									"func_" ++ binary_to_list(Name) ++ "(Params) ->\r\n\t[" ++ ParaNameString ++ "|_] = Params,\r\n\tetherlib:getStringValue(eth_propertyMappingCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\",[" ++ FuncParaString ++ "])).\r\n" ++ get_api_code(L);
+								true ->
+									"func_" ++ binary_to_list(Name) ++ "(Params) ->\r\n\t[" ++ ParaNameString ++ "|_] = Params,\r\n\teth_propertyMappingCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\",[" ++ FuncParaString ++ "]).\r\n" ++ get_api_code(L)
+							end
+					end										
 			end
 	end.
 
@@ -106,4 +118,10 @@ get_FunctionParaList([]) ->
 	[];
 get_FunctionParaList([Input|L]) ->
 	{obj, [{"name", Name}, {"type", Type}]} = Input,
-	["{\"" ++ binary_to_list(Type) ++ "\",P_" ++ binary_to_list(Name) ++ ",64,0}"|get_FunctionParaList(L)].
+	if
+		Type =:= <<"string">>; Type =:= <<"bytes">> ->
+			["{\"" ++ binary_to_list(Type) ++ "\",P_" ++ binary_to_list(Name) ++ ",string:len(P_" ++ binary_to_list(Name) ++ "),32}"|get_FunctionParaList(L)];
+		true ->
+			["{\"" ++ binary_to_list(Type) ++ "\",P_" ++ binary_to_list(Name) ++ ",64,0}"|get_FunctionParaList(L)]
+	end.
+	
