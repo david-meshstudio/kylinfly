@@ -21,3 +21,23 @@ str_replace_list([], _, String) ->
 	String;
 str_replace_list([Find|L], Replace, String) ->
 	str_replace_list(L, Replace, str_replace(Find, Replace, String)).
+
+str_beginwith(Find, String) ->
+	Start = string:str(String, Find),
+	if
+		Start =:= 1 ->
+			true;
+		true ->
+			false
+	end.
+
+str_endwith(Find, String) ->
+	Start = string:str(String, Find),
+	Len1 = string:len(String),
+	Len2 = string:len(Find),
+	if
+		Start =:= Len1 - Len2 + 1 ->
+			true;
+		true ->
+			false
+	end.

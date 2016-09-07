@@ -204,3 +204,47 @@ getStringValue(Data) ->
 	Offset = hex2de(lists:sublist(Data, 1, 64)),
 	NameLength = hex2de(lists:sublist(Data,  Offset * 2 + 1, 64)),
 	hexstring2string(lists:sublist(Data, 64 + Offset * 2 + 1, NameLength * 2)).
+
+getArrayValue(Data, Type) ->
+	Len = hex2de(lists:sublist(Data, 1, 64)),
+	if
+		Type =:= "int"; Type =:= "int256"; Type =:= "uint"; Type =:= "uint256" ->
+			getIntValueList(Data, Len, 0);
+		Type =:= "bytes" ->
+			getByteValueList(Data, Len, 0)
+	end.
+
+getIntValueList(Data, Len, Offset) ->
+	if
+		Len > 0 ->
+			[hex2de(lists:sublist(Data,  64 + Offset * 64 + 1, 64))|getIntValueList(Data, Len - 1, Offset + 1)];
+		true ->
+			[]
+	end.
+	
+getByteValueList(Data, Len, Offset) ->
+	if
+		Len > 0 ->
+			[lists:sublist(Data,  64 + Offset * 2 + 1, 2)|getIntValueList(Data, Len - 1, Offset + 1)];
+		true ->
+			[]
+	end.
+
+genArrayValueInput(Data, Type) ->
+	Len = padleft(de2Hex(length(Data)),64),
+	if
+		Type =:= "int"; Type =:= "int256"; Type =:= "uint"; Type =:= "uint256" ->
+			Len ++ genIntValueList(Data);
+		true ->
+			Len ++ genByteValueList(Data)
+	end.
+
+genIntValueList([]) ->
+	"";
+genIntValueList([V|L]) ->
+	padleft(de2Hex(V),64) ++ genIntValueList(L).
+
+genByteValueList([]) ->
+	"";
+genByteValueList([V|L]) ->
+	V ++ genByteValueList(L).

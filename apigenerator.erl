@@ -8,6 +8,7 @@ update_server() ->
 
 update_contract_api(ContractName) ->
 	Model = "contract_" ++ ContractName ++ "_api",
+	% delete_module(Model),
 	compile:file(Model),
 	ContractList = qiniulib:downloadObj("contractlist"),
 	case sets:is_element(Model, sets:from_list(ContractList)) of
@@ -50,13 +51,17 @@ get_api_code([AbiDef|L]) ->
 		Constant ->
 			[{obj, [_, {"type", OutputType}]}|_] = OutputList,
 			io:format("~p~n", [OutputList]),
+			IsArray = kylinfly_tool:str_endwith("[]", OutputType),
 			case InputList of
 				[] when OutputType =:= <<"int">>; OutputType =:= <<"int256">>; OutputType =:= <<"uint">>; OutputType =:= <<"uint256">> ->
 					"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\tencode(etherlib:hex2de(eth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\"))).\r\n" ++ get_api_code(L);
 				[] when OutputType =:= <<"string">>; OutputType =:= <<"bytes">> ->
 					"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\tetherlib:getStringValue(eth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\")).\r\n" ++ get_api_code(L);
+				[] when IsArray ->
+					ArrayType = kylinfly_tool:str_replace("[]", "", OutputType),
+					"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\tetherlib:getArrayValue(eth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\"),\"" ++ ArrayType ++ "\").\r\n" ++ get_api_code(L);
 				[] ->
-					"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\teth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\").\r\n" ++ get_api_code(L);				
+					"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\teth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\").\r\n" ++ get_api_code(L);
 				[_] ->
 					ParaNameString = string:join(get_InputNameList(InputList),","),
 					FuncParaString = string:join(get_FunctionParaList(InputList),","),
@@ -76,11 +81,15 @@ get_api_code([AbiDef|L]) ->
 				<<"function">> ->
 					[{obj, [_, {"type", OutputType}]}|_] = OutputList,
 					io:format("~p~n", [OutputList]),
+					IsArray = kylinfly_tool:str_endwith("[]", OutputType),
 					case InputList of
 						[] when OutputType =:= <<"int">>; OutputType =:= <<"int256">>; OutputType =:= <<"uint">>; OutputType =:= <<"uint256">> ->
 							"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\tencode(etherlib:hex2de(eth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\"))).\r\n" ++ get_api_code(L);
 						[] when OutputType =:= <<"string">>; OutputType =:= <<"bytes">> ->
 							"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\tetherlib:getStringValue(eth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\")).\r\n" ++ get_api_code(L);
+						[] when IsArray ->
+							ArrayType = kylinfly_tool:str_replace("[]", "", OutputType),
+							"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\tetherlib:getArrayValue(eth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\"),\"" ++ ArrayType ++ "\").\r\n" ++ get_api_code(L);
 						[] ->
 							"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\teth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\").\r\n" ++ get_api_code(L);
 						_ ->
@@ -118,9 +127,13 @@ get_FunctionParaList([]) ->
 	[];
 get_FunctionParaList([Input|L]) ->
 	{obj, [{"name", Name}, {"type", Type}]} = Input,
+	IsArray = kylinfly_tool:str_endwith("[]", Type),
 	if
 		Type =:= <<"string">>; Type =:= <<"bytes">> ->
 			["{\"" ++ binary_to_list(Type) ++ "\",P_" ++ binary_to_list(Name) ++ ",string:len(P_" ++ binary_to_list(Name) ++ "),32}"|get_FunctionParaList(L)];
+		IsArray ->
+			ArrayType = kylinfly_tool:str_replace("[]", "", Type),
+			["{\"" ++ binary_to_list(Type) ++ "\",genArrayValueInput(P_" ++ binary_to_list(Name) ++ ",\"" ++ ArrayType ++ "\"),string:len(genArrayValueInput(P_" ++ binary_to_list(Name) ++ ",\"" ++ ArrayType ++ "\")),0}"|get_FunctionParaList(L)];
 		true ->
 			["{\"" ++ binary_to_list(Type) ++ "\",P_" ++ binary_to_list(Name) ++ ",64,0}"|get_FunctionParaList(L)]
 	end.
