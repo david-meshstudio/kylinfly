@@ -206,12 +206,13 @@ getStringValue(Data) ->
 	hexstring2string(lists:sublist(Data, 64 + Offset * 2 + 1, NameLength * 2)).
 
 getArrayValue(Data, Type) ->
-	Len = hex2de(lists:sublist(Data, 1, 64)),
+	Offset = hex2de(lists:sublist(Data, 1, 64)),
+	Len = hex2de(lists:sublist(Data, Offset * 2 + 1, 64)),
 	if
 		Type =:= "int"; Type =:= "int256"; Type =:= "uint"; Type =:= "uint256" ->
-			getIntValueList(Data, Len, 0);
+			getIntValueList(Data, Len, 1);
 		Type =:= "bytes" ->
-			getByteValueList(Data, Len, 0)
+			getByteValueList(Data, Len, 1)
 	end.
 
 getIntValueList(Data, Len, Offset) ->
@@ -225,26 +226,137 @@ getIntValueList(Data, Len, Offset) ->
 getByteValueList(Data, Len, Offset) ->
 	if
 		Len > 0 ->
-			[lists:sublist(Data,  64 + Offset * 2 + 1, 2)|getIntValueList(Data, Len - 1, Offset + 1)];
+			[lists:sublist(Data,  64 + Offset * 2 + 1, 2)|getByteValueList(Data, Len - 1, Offset + 1)];
 		true ->
 			[]
 	end.
 
 genArrayValueInput(Data, Type) ->
-	Len = padleft(de2Hex(length(Data)),64),
+	Data1 = string:tokens(Data,"|"),
+	Len = padleft("20",64) ++ padleft(de2Hex(length(Data1)),64),
 	if
 		Type =:= "int"; Type =:= "int256"; Type =:= "uint"; Type =:= "uint256" ->
-			Len ++ genIntValueList(Data);
+			Len ++ genIntValueList(Data1);
 		true ->
-			Len ++ genByteValueList(Data)
+			Len ++ genByteValueList(Data1)
 	end.
 
 genIntValueList([]) ->
 	"";
 genIntValueList([V|L]) ->
-	padleft(de2Hex(V),64) ++ genIntValueList(L).
+	{Vi, _} = string:to_integer(V),
+	padleft(de2Hex(Vi),64) ++ genIntValueList(L).
 
 genByteValueList([]) ->
 	"";
 genByteValueList([V|L]) ->
 	V ++ genByteValueList(L).
+
+isDynamicType(OutputType) ->
+	IsArray = kylinfly_tool:str_endwith("[]", binary_to_list(OutputType)),
+	if
+		IsArray; OutputType =:= <<"string">> ->
+			true;
+		true ->
+			false
+	end.
+
+countDynamicType([]) ->
+	0;
+countDynamicType([{obj, [_,{_,OutputType}]}|L]) ->
+	IsDyn = isDynamicType(OutputType),
+	if
+		IsDyn ->
+			1 + countDynamicType(L);
+		true ->
+			countDynamicType(L)
+	end.
+
+getStaticOutputOffset([]) ->
+	0;
+getStaticOutputOffset([OutputType|L]) ->
+	if
+		OutputType =:= <<"int">>; OutputType =:= <<"int256">>; OutputType =:= <<"uint">>; OutputType =:= <<"uint256">> ->
+			64 + getStaticOutputOffset(L);
+		true ->
+			64 + getStaticOutputOffset(L)
+	end.
+
+arrangeOutputType([], L1, L2) ->
+	[lists:merge(lists:reverse(L1), lists:reverse(L2)), getStaticOutputOffset(L1)];
+arrangeOutputType([Output|L], L1, L2) ->
+	{obj, [_,{_,OutputType}]} = Output,
+	IsDyn = isDynamicType(OutputType),
+	if
+		IsDyn ->
+			arrangeOutputType(L, L1, [Output|L2]);
+		true ->
+			arrangeOutputType(L, [Output|L1], L2)
+	end.
+
+getMultiOutputValue(Data, OutputList) ->
+	CountDyn = countDynamicType(OutputList),
+	if
+		CountDyn > 0 ->
+			[OutputList2, OffsetS] = arrangeOutputType(OutputList, [], []),
+			OffsetList = getDynamicOutputOffsetList(Data, CountDyn, OffsetS),
+			getDynamicOutputValueByType(Data, OutputList2, OffsetList, 0);
+		true ->
+			getStaticOutputValueByType(Data, OutputList, 0)
+	end.
+
+getStaticOutputValueByType(Data, [{obj, [_,{_,OutputType}]}|L], Offset) ->
+	if
+		OutputType =:= <<"int">>; OutputType =:= <<"int256">>; OutputType =:= <<"uint">>; OutputType =:= <<"uint256">> ->
+			[hex2de(lists:sublist(Data, Offset * 64 + 1, 64))|getStaticOutputValueByType(Data, L, Offset + 1)];
+		true ->
+			[lists:sublist(Data, Offset * 64 + 1, 64)|getStaticOutputValueByType(Data, L, Offset + 1)]
+	end.
+
+getOneStaticOutputValueByType(Data, OutputType, Offset) ->
+	if
+		OutputType =:= <<"int">>; OutputType =:= <<"int256">>; OutputType =:= <<"uint">>; OutputType =:= <<"uint256">> ->
+			hex2de(lists:sublist(Data, Offset * 64 + 1, 64));
+		true ->
+			lists:sublist(Data, Offset * 64 + 1, 64)
+	end.
+
+getDynamicOutputOffsetList(Data, CountDyn, Offset) ->
+	if
+		CountDyn - (Offset / 64 - 1) > 0 ->
+			[hex2de(lists:sublist(Data, Offset + 1, 64))|getDynamicOutputOffsetList(Data, CountDyn, Offset + 64)];
+		true ->
+			[]
+	end.
+
+getDynamicOutputValueByType(_, [], [], _) ->
+	[];
+getDynamicOutputValueByType(Data, [{obj, [_,{_,OutputType}]}|OTL], OffsetList, Offset) ->
+	IsDyn = isDynamicType(OutputType),
+	if
+		IsDyn ->
+			[Offset2|OSL] = OffsetList,
+			[getOneDynamicOutputValueByType(Data, OutputType, Offset2)|getDynamicOutputValueByType(Data, OTL, OSL, Offset)];
+		true ->
+			[getOneStaticOutputValueByType(Data, OutputType, Offset)|getDynamicOutputValueByType(Data, OTL, OffsetList, Offset + 1)]
+	end.
+
+getOneDynamicOutputValueByType(Data, OutputType, Offset2) ->
+	Len = hex2de(lists:sublist(Data, Offset2 * 2 + 1, 64)),
+	if
+		OutputType =:= <<"int[]">>; OutputType =:= <<"int256[]">>; OutputType =:= <<"uint[]">>; OutputType =:= <<"uint256[]">> ->
+			getOneDynamicOutputValueByTypeIntList(Data, Offset2, Len, 1);
+		OutputType =:= <<"string">> ->
+			hexstring2string(lists:sublist(Data, 64 + Offset2 * 2 + 1, Len * 2));
+		true ->
+			d
+	end.
+
+getOneDynamicOutputValueByTypeIntList(Data, Offset2, Len, Index) ->
+	if
+		Len - Index > 0 ->
+			[hex2de(lists:sublist(Data, Offset2 * 2 + 1, 64))|getOneDynamicOutputValueByTypeIntList(Data, Offset2, Len, Index + 1)];
+		true ->
+			[]
+	end.
+	

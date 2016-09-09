@@ -51,22 +51,34 @@ get_api_code([AbiDef|L]) ->
 		Constant ->
 			[{obj, [_, {"type", OutputType}]}|_] = OutputList,
 			io:format("~p~n", [OutputList]),
-			IsArray = kylinfly_tool:str_endwith("[]", OutputType),
-			case InputList of
-				[] when OutputType =:= <<"int">>; OutputType =:= <<"int256">>; OutputType =:= <<"uint">>; OutputType =:= <<"uint256">> ->
-					"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\tencode(etherlib:hex2de(eth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\"))).\r\n" ++ get_api_code(L);
-				[] when OutputType =:= <<"string">>; OutputType =:= <<"bytes">> ->
-					"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\tetherlib:getStringValue(eth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\")).\r\n" ++ get_api_code(L);
-				[] when IsArray ->
-					ArrayType = kylinfly_tool:str_replace("[]", "", OutputType),
-					"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\tetherlib:getArrayValue(eth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\"),\"" ++ ArrayType ++ "\").\r\n" ++ get_api_code(L);
-				[] ->
-					"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\teth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\").\r\n" ++ get_api_code(L);
-				[_] ->
-					ParaNameString = string:join(get_InputNameList(InputList),","),
-					FuncParaString = string:join(get_FunctionParaList(InputList),","),
-					"func_" ++ binary_to_list(Name) ++ "(Params) ->\r\n\t[" ++ ParaNameString ++ "|_] = Params,\r\n\teth_propertyMappingCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\",[" ++ FuncParaString ++ "]).\r\n" ++ get_api_code(L)
-			end;			
+			if
+				is_list(OutputList) ->
+					case InputList of
+						[] ->
+							"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\tetherlib:getMultiOutputValue(eth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\"),[" ++ get_OutputTypeList(OutputList, 0) ++ "]).\r\n" ++ get_api_code(L);
+						[_] ->
+							ParaNameString = string:join(get_InputNameList(InputList),","),
+							FuncParaString = string:join(get_FunctionParaList(InputList),","),
+							"func_" ++ binary_to_list(Name) ++ "(Params) ->\r\n\t[" ++ ParaNameString ++ "|_] = Params,\r\n\tetherlib:getMultiOutputValue(eth_propertyMappingCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\",[" ++ FuncParaString ++ "]),[" ++ get_OutputTypeList(OutputList, 0) ++ "]).\r\n" ++ get_api_code(L)
+					end;
+				true ->
+					IsArray = kylinfly_tool:str_endwith("[]", binary_to_list(OutputType)),
+					case InputList of
+						[] when OutputType =:= <<"int">>; OutputType =:= <<"int256">>; OutputType =:= <<"uint">>; OutputType =:= <<"uint256">> ->
+							"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\tencode(etherlib:hex2de(eth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\"))).\r\n" ++ get_api_code(L);
+						[] when OutputType =:= <<"string">>; OutputType =:= <<"bytes">> ->
+							"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\tetherlib:getStringValue(eth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\")).\r\n" ++ get_api_code(L);
+						[] when IsArray ->
+							ArrayType = kylinfly_tool:str_replace("[]", "", binary_to_list(OutputType)),
+							"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\tetherlib:getArrayValue(eth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\"),\"" ++ ArrayType ++ "\").\r\n" ++ get_api_code(L);
+						[] ->
+							"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\teth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\").\r\n" ++ get_api_code(L);
+						[_] ->
+							ParaNameString = string:join(get_InputNameList(InputList),","),
+							FuncParaString = string:join(get_FunctionParaList(InputList),","),
+							"func_" ++ binary_to_list(Name) ++ "(Params) ->\r\n\t[" ++ ParaNameString ++ "|_] = Params,\r\n\teth_propertyMappingCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\",[" ++ FuncParaString ++ "]).\r\n" ++ get_api_code(L)
+					end
+			end;
 		true ->
 			case Type of
 				<<"function">> when OutputList =:= [] ->
@@ -81,14 +93,14 @@ get_api_code([AbiDef|L]) ->
 				<<"function">> ->
 					[{obj, [_, {"type", OutputType}]}|_] = OutputList,
 					io:format("~p~n", [OutputList]),
-					IsArray = kylinfly_tool:str_endwith("[]", OutputType),
+					IsArray = kylinfly_tool:str_endwith("[]", binary_to_list(OutputType)),
 					case InputList of
 						[] when OutputType =:= <<"int">>; OutputType =:= <<"int256">>; OutputType =:= <<"uint">>; OutputType =:= <<"uint256">> ->
 							"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\tencode(etherlib:hex2de(eth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\"))).\r\n" ++ get_api_code(L);
 						[] when OutputType =:= <<"string">>; OutputType =:= <<"bytes">> ->
 							"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\tetherlib:getStringValue(eth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\")).\r\n" ++ get_api_code(L);
 						[] when IsArray ->
-							ArrayType = kylinfly_tool:str_replace("[]", "", OutputType),
+							ArrayType = kylinfly_tool:str_replace("[]", "", binary_to_list(OutputType)),
 							"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\tetherlib:getArrayValue(eth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\"),\"" ++ ArrayType ++ "\").\r\n" ++ get_api_code(L);
 						[] ->
 							"func_" ++ binary_to_list(Name) ++ "(_) ->\r\n\teth_propertyCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\").\r\n" ++ get_api_code(L);
@@ -96,6 +108,10 @@ get_api_code([AbiDef|L]) ->
 							ParaNameString = string:join(get_InputNameList(InputList),","),
 							FuncParaString = string:join(get_FunctionParaList(InputList),","),
 							if
+								OutputType =:= <<"int[]">>; OutputType =:= <<"int256[]">>; OutputType =:= <<"uint[]">>; OutputType =:= <<"uint256[]">> ->
+									"func_" ++ binary_to_list(Name) ++ "(Params) ->\r\n\t[" ++ ParaNameString ++ "|_] = Params,\r\n\tencode(etherlib:getArrayValue(eth_propertyMappingCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\",[" ++ FuncParaString ++ "]),\"uint\")).\r\n" ++ get_api_code(L);
+								OutputType =:= <<"byte[]">> ->
+									"func_" ++ binary_to_list(Name) ++ "(Params) ->\r\n\t[" ++ ParaNameString ++ "|_] = Params,\r\n\tencode(etherlib:getArrayValue(eth_propertyMappingCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\",[" ++ FuncParaString ++ "]),\"bytes\")).\r\n" ++ get_api_code(L);
 								OutputType =:= <<"int">>; OutputType =:= <<"int256">>; OutputType =:= <<"uint">>; OutputType =:= <<"uint256">> ->
 									"func_" ++ binary_to_list(Name) ++ "(Params) ->\r\n\t[" ++ ParaNameString ++ "|_] = Params,\r\n\tencode(etherlib:hex2de(eth_propertyMappingCall(?ACCOUNT,\"" ++ binary_to_list(Name) ++ "\",[" ++ FuncParaString ++ "]))).\r\n" ++ get_api_code(L);
 								OutputType =:= <<"string">>; OutputType =:= <<"bytes">> ->
@@ -127,14 +143,24 @@ get_FunctionParaList([]) ->
 	[];
 get_FunctionParaList([Input|L]) ->
 	{obj, [{"name", Name}, {"type", Type}]} = Input,
-	IsArray = kylinfly_tool:str_endwith("[]", Type),
+	IsArray = kylinfly_tool:str_endwith("[]", binary_to_list(Type)),
 	if
 		Type =:= <<"string">>; Type =:= <<"bytes">> ->
 			["{\"" ++ binary_to_list(Type) ++ "\",P_" ++ binary_to_list(Name) ++ ",string:len(P_" ++ binary_to_list(Name) ++ "),32}"|get_FunctionParaList(L)];
 		IsArray ->
-			ArrayType = kylinfly_tool:str_replace("[]", "", Type),
-			["{\"" ++ binary_to_list(Type) ++ "\",genArrayValueInput(P_" ++ binary_to_list(Name) ++ ",\"" ++ ArrayType ++ "\"),string:len(genArrayValueInput(P_" ++ binary_to_list(Name) ++ ",\"" ++ ArrayType ++ "\")),0}"|get_FunctionParaList(L)];
+			ArrayType = kylinfly_tool:str_replace("[]", "", binary_to_list(Type)),
+			["{\"" ++ binary_to_list(Type) ++ "\",etherlib:genArrayValueInput(P_" ++ binary_to_list(Name) ++ ",\"" ++ ArrayType ++ "\"),string:len(etherlib:genArrayValueInput(P_" ++ binary_to_list(Name) ++ ",\"" ++ ArrayType ++ "\")),0}"|get_FunctionParaList(L)];
 		true ->
 			["{\"" ++ binary_to_list(Type) ++ "\",P_" ++ binary_to_list(Name) ++ ",64,0}"|get_FunctionParaList(L)]
 	end.
 	
+get_OutputTypeList([], _) ->
+	"";
+get_OutputTypeList([Output|L], Index) ->
+	{obj, [{_, Name},{_, Type}]} = Output,
+	if
+		Index =:= 0 ->
+			"{obj,[{\"name\",<<\"" ++ binary_to_list(Name) ++ "\">>},{\"type\",<<\"" ++ binary_to_list(Type) ++ "\">>}]}" ++ get_OutputTypeList(L, Index + 1);
+		true ->
+			",{obj,[{\"name\",<<\"" ++ binary_to_list(Name) ++ "\">>},{\"type\",<<\"" ++ binary_to_list(Type) ++ "\">>}]}" ++ get_OutputTypeList(L, Index + 1)
+	end.	
