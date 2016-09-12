@@ -103,6 +103,21 @@ eth_methodCall(To, Method, Params) ->
 	[_,_|RL] = binary_to_list(Result),
 	RL.
 
+eth_getEventLogs(Account, Data) ->
+	% Data = get_eventSignHash(Event++"("++get_ParamsTypeStringEvent(Params)++")"),
+	{ok, {obj, [_, _, {_, Res}]}, _} = decode(call("eth_getLogs","[{\"fromBlock\":\"earliest\",\"toBlock\":\"latest\",\"address\":\""++Account++"\",\"topics\":[\""++Data++"\"]}]")),
+	case Res of
+		[] ->
+			Res;
+		_ ->
+			[{obj, Result}] = Res,
+			Result
+	end.
+
+get_eventSignHash(Sign) ->
+	{ok, {obj, [_, _, {_, Result}]}, _} = decode(web3_sha3(Sign)),
+	binary_to_list(Result).
+
 get_methodCallData(Method, Params) ->
 	get_methodSignHash(get_methodSign(Method,Params)) ++ get_ParamsValueString(Params).
 
@@ -113,6 +128,21 @@ get_methodSignHash(Sign) ->
 	{ok, {obj, [_, _, {_, Result}]}, _} = decode(web3_sha3(Sign)),
 	[H1,H2,H3,H4,H5,H6,H7,H8,H9,H10|_] = binary_to_list(Result),
 	[H1,H2,H3,H4,H5,H6,H7,H8,H9,H10].
+
+get_ParamsTypeStringEvent([P|[]]) ->
+	case P of
+		{obj, [_, _, {"type", Type}]} ->
+			binary_to_list(Type);
+		{} ->
+			""
+	end;
+get_ParamsTypeStringEvent([P|PL]) ->
+	case P of
+		{obj, [_, _, {"type", Type}]} ->
+			binary_to_list(Type)++","++get_ParamsTypeStringEvent(PL);			
+		{} ->
+			""
+	end.
 
 get_ParamsTypeString([P|[]]) ->
 	case P of
@@ -359,4 +389,3 @@ getOneDynamicOutputValueByTypeIntList(Data, Offset2, Len, Index) ->
 		true ->
 			[]
 	end.
-	
