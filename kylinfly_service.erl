@@ -12,12 +12,6 @@ kfs_getCommandCode(FuncCall) ->
 				"remove" ->
 					"kfs_func_record_remove(\""++Name++"\",\""++Key++"\",\""++Value++"\"),"
 			end;
-		"Crypto" ->
-			[Key, Algorithm|_] = Params,
-			case Algorithm of
-				"AES" ->
-					Key;
-				"DES" ->
-					Key
-			end
+		"SS" ->
+			Mode
 	end.

@@ -28,7 +28,7 @@ do(SessionID, _Env, Input) ->
 		"deployContractAPI" ->
 			[File, Txid|_] = Params,
 			{{[ContractName|_], _, AbiDef}, _Mark} = etherlib:eth_compileSolidityQiniuFile(File),
-			{ok, {obj, [_, _, {_, {obj, [_, _, {_, Account}, _, _, _, _, _, _, _, _]}}]}, _} = decode(etherlib:eth_getTransactionReceipt(Txid)),
+			{ok, {obj, [_, _, {_, {obj, [_, _, {_, Account}, _, _, _, _, _, _, _, _, _]}}]}, _} = decode(etherlib:eth_getTransactionReceipt(Txid)),
 			apigenerator:gen_api_sourcefile(ContractName, binary_to_list(Account), AbiDef),
 			apigenerator:update_contract_api(ContractName),
 			timer:sleep(3000),

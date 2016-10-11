@@ -110,8 +110,23 @@ eth_getEventLogs(Account, Data) ->
 		[] ->
 			Res;
 		_ ->
-			[{obj, Result}] = Res,
-			Result
+			[{obj,[_,_,_,{_,ResData},_,_,_,_,_]}|_] = lists:reverse(Res),
+			lists:reverse(get_stringList(binary_to_list(ResData)))
+	end.
+
+get_stringList([_,_|Data]) ->
+	get_stringList2(Data, 1, [[]]).
+
+get_stringList2([], _, Res) ->
+	Res;
+get_stringList2([H|L], Index, [RH|RL]) ->
+	if
+		Index < 64 ->
+			get_stringList2(L, Index + 1, [[H|RH]|RL]);
+		Index =:= 64, L =:= [] ->
+			get_stringList2(L, 1, [lists:reverse([H|RH])|RL]);
+		Index =:= 64 ->
+			get_stringList2(L, 1, [[]|[lists:reverse([H|RH])|RL]])
 	end.
 
 get_eventSignHash(Sign) ->
