@@ -11,9 +11,9 @@ call(Params) ->
 	end.	
 
 add(P1, P2, C1, C2, UID) ->
-	Params = ["add",[P1, P2, C1, C2, UID]],
+	Params = ["add", [P1, P2, C1, C2, UID]],
 	call(Params).
 
 multiply(P, C1, C2, UID) ->
-	Params = ["multiply",[P, C1, C2, UID]],
+	Params = ["multiply", [P, C1, C2, UID]],
 	call(Params).

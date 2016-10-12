@@ -37,4 +37,4 @@ apply_service(Info, Module) ->
 	end.
 
 callback(Res, Module, Callback) ->
-	apply(Module, Callback, [Res]).
+	apply(Module, list_to_atom("func_" ++ Callback), [Res]).
