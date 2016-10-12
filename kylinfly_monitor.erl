@@ -5,6 +5,10 @@ event_check() ->
 	EventList = qiniulib:downloadObj("eventlist"),
 	check_contract(EventList).
 
+register_event(Module, Func) ->
+	EventList = qiniulib:downloadObj("eventlist"),
+	qiniulib:uploadObj("eventlist", [{Module, Func}|EventList]).
+
 check_contract([]) ->
 	0;
 check_contract([{Module, Func}|L]) ->
