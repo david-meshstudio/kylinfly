@@ -4,8 +4,9 @@
   
 start_link(_) ->  
   io:format("test sup start link~n"),  
-  supervisor:start_link({local, ?MODULE}, ?MODULE, []).  
-  
+  supervisor:start_link({local, ?MODULE}, ?MODULE, []),
+  io:format("timer start~n"),
+  kylinfly_timer:start().
   
 init([]) ->  
   io:format("test sup init~n"),  
