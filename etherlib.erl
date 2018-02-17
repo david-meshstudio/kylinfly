@@ -6,7 +6,7 @@
 
 call(Method, Params) ->
 	inets:start(),
-	case httpc:request(post,{"http://localhost:8545",[],"application/x-www-form-urlencoded","{\"jsonrpc\":\"2.0\",\"method\":\""++Method++"\",\"params\":"++Params++",\"id\":1}"},[],[]) of
+	case httpc:request(post,{"http://localhost:8545",[],"application/json","{\"jsonrpc\":\"2.0\",\"method\":\""++Method++"\",\"params\":"++Params++",\"id\":1}"},[],[]) of
 		{ok, {_, _, Body}} -> Body;
 		{error, Reason} -> io:format("error cause ~p~n", [Reason])
 	end.
